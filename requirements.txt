@@ -1,0 +1,5 @@
+gunicorn
+Flask
+speechrecognition
+pydub
+ffmpeg

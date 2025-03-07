@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Header Styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 0 0 15px 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .header h1 {
+            flex-grow: 1;
+            text-align: left;
+            margin: 0;
+            font-size: 34px;
+        }
+
+        /* Contact Details */
+        .contact {
+            display: flex;
+            align-items: center;
+        }
+
+        .contact a {
+            color: white;
+            margin-left: 10px;
+            text-decoration: none;
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+
+        .contact a:hover {
+            transform: scale(1.2);
+        }
+
+        /* Text Box */
+        #text-box {
+            width: 80%;
+            height: 200px;
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        #text-box:focus {
+            transform: scale(1.05);
+        }
+
+        /* Buttons */
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #ff7eb3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background 0.3s ease-in-out, transform 0.2s;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #ff4f7b;
+            transform: scale(1.1);
+        }
+
+        .recording {
+            background-color: red !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+            animation: fadeIn 2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section -->
+    <div class="header">
+        <h1>Speech to Text Web App</h1>
+        <div class="contact">
+            <a href="mailto:riteshchakramani123@gmail.com?subject=Inquiry&body=Hello Ritesh," class="email">📧 Mail Me</a>
+            <a href="https://github.com/rc-exe" target="_blank">🐙 GitHub</a>
+            <a href="https://instagram.com/_ritesh_rc_" target="_blank">📷 Instagram</a>
+        </div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="button-container">
+        <button id="recordButton" onclick="startVoiceDetection()">Start Listening</button>
+        <button id="exitButton" onclick="stopApp()">Stop Recording</button>
+    </div>
+    
+
+    <!-- Text Box -->
+    <textarea id="text-box" readonly></textarea>
+
+    <!-- Footer -->
+    <footer>
+        <div><a>Please wait 5 seconds after clicking on "Start Listening" button...</a></div>
+        <a>© 2025 Ritesh Chakramani. All rights reserved.</a>
+    </footer>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioContext, processor, microphone, stream;
+        let isRecording = false;
+
+        async function startVoiceDetection() {
+            const button = document.getElementById("recordButton");
+
+            if (button.classList.contains("recording")) return;
+
+            try {
+                button.textContent = "Listening...";
+                button.classList.add("recording");
+                button.disabled = true;
+                isRecording = true;
+
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                microphone = audioContext.createMediaStreamSource(stream);
+                processor = audioContext.createScriptProcessor(1024, 1, 1);
+
+                processor.onaudioprocess = function (event) {
+                    let input = event.inputBuffer.getChannelData(0);
+                    let sum = 0.0;
+
+                    for (let i = 0; i < input.length; i++) {
+                        sum += input[i] * input[i];
+                    }
+
+                    let volume = Math.sqrt(sum / input.length);
+                    
+                    if (volume > 0.01) {  
+                        console.log("Sound detected, recording started...");
+                        startRecording();
+                    }
+                };
+
+                microphone.connect(processor);
+                processor.connect(audioContext.destination);
+
+            } catch (error) {
+                console.error("Error accessing microphone:", error);
+                alert("Microphone access denied or not available.");
+                button.textContent = "Start Listening";
+                button.classList.remove("recording");
+                button.disabled = false;  
+            }
+        }
+
+        function startRecording() {
+            if (mediaRecorder && mediaRecorder.state === "recording") return;
+
+            audioChunks = [];
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const button = document.getElementById("recordButton");
+                button.disabled = false; 
+
+                const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                const formData = new FormData();
+                formData.append("file", audioBlob, "audio.wav");
+
+                const response = await fetch("/speech-to-text", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById("text-box").value += data.text + " \n";
+                } else {
+                    alert("Error: " + data.error);
+                }
+            };
+
+            setTimeout(() => {
+                if (mediaRecorder.state === "recording") {
+                    mediaRecorder.stop();
+                }
+            }, 5000);
+        }
+
+        function stopApp() {
+            if (isRecording) {
+                mediaRecorder?.stop();
+                isRecording = false;
+            }
+
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            if (audioContext) {
+                audioContext.close();
+            }
+
+            const button = document.getElementById("recordButton");
+            button.textContent = "Start Listening";
+            button.classList.remove("recording");
+            button.disabled = false;
+
+            alert("Recording stopped.");
+        }
+    </script>
+
+</body>
+</html>
