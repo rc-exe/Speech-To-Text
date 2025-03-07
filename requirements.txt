@@ -1,5 +1,4 @@
-gunicorn
-Flask
+flask
+torch
+whisper
 speechrecognition
-pydub
-ffmpeg
