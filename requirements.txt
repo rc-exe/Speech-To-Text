@@ -2,3 +2,4 @@ flask
 torch
 whisper
 speechrecognition
+waitress
