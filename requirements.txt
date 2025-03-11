@@ -3,10 +3,6 @@ Flask
 speechrecognition
 pydub
 ffmpeg
-<<<<<<< HEAD
 whisper
-=======
 whisper
 gunicorn
-
->>>>>>> 2e89752edfc961e1ec44a6c66ea92ee9c5b1b2ea
