@@ -2,10 +2,8 @@ Flask
 torch
 openai-whisper
 speechrecognition
-<<<<<<< HEAD
 pydub
 ffmpeg
 whisper
-=======
 gunicorn
->>>>>>> a3729246ed7a122ad0163052f0a699f85df3e4a1
+
