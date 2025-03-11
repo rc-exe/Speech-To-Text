@@ -5,5 +5,4 @@ speechrecognition
 pydub
 ffmpeg
 whisper
-whisper
 gunicorn
