@@ -5,6 +5,7 @@ import speech_recognition as sr
 import warnings
 import time
 from flask import Flask, render_template, jsonify
+
 warnings.filterwarnings("ignore")
 
 app = Flask(__name__)

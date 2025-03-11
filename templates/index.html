@@ -149,115 +149,104 @@
     </footer>
 
     <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioContext, processor, microphone, stream;
-        let isRecording = false;
+        let audioContext, audioWorkletNode, mediaStream;
+let mediaRecorder;
+let audioChunks = [];
 
-        async function startVoiceDetection() {
-            const button = document.getElementById("recordButton");
+async function startVoiceDetection() {
+    const button = document.getElementById("recordButton");
+    if (button.classList.contains("recording")) return;
 
-            if (button.classList.contains("recording")) return;
+    try {
+        button.textContent = "Listening...";
+        button.classList.add("recording");
+        button.disabled = true;
 
-            try {
-                button.textContent = "Listening...";
-                button.classList.add("recording");
-                button.disabled = true;
-                isRecording = true;
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new AudioContext();
 
-                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                microphone = audioContext.createMediaStreamSource(stream);
-                processor = audioContext.createScriptProcessor(1024, 1, 1);
+        await audioContext.audioWorklet.addModule('/static/audioProcessor.js');
+        audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-processor');
 
-                processor.onaudioprocess = function (event) {
-                    let input = event.inputBuffer.getChannelData(0);
-                    let sum = 0.0;
+        const mediaStreamSource = audioContext.createMediaStreamSource(mediaStream);
+        mediaStreamSource.connect(audioWorkletNode);
 
-                    for (let i = 0; i < input.length; i++) {
-                        sum += input[i] * input[i];
-                    }
-
-                    let volume = Math.sqrt(sum / input.length);
-                    
-                    if (volume > 0.01) {  
-                        console.log("Sound detected, recording started...");
-                        startRecording();
-                    }
-                };
-
-                microphone.connect(processor);
-                processor.connect(audioContext.destination);
-
-            } catch (error) {
-                console.error("Error accessing microphone:", error);
-                alert("Microphone access denied or not available.");
-                button.textContent = "Start Listening";
-                button.classList.remove("recording");
-                button.disabled = false;  
+        audioWorkletNode.port.onmessage = (event) => {
+            if (event.data === 'startRecording') {
+                console.log("Sound detected, recording started...");
+                startRecording();
             }
+        };
+
+    } catch (error) {
+        console.error("Error accessing microphone:", error);
+        alert("Microphone access denied or not available.");
+        button.textContent = "Start Listening";
+        button.classList.remove("recording");
+        button.disabled = false;
+    }
+}
+
+function startRecording() {
+    if (mediaRecorder && mediaRecorder.state === "recording") return;
+
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(mediaStream);
+    mediaRecorder.start();
+
+    mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = async () => {
+        const button = document.getElementById("recordButton");
+        button.disabled = false;
+
+        const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("file", audioBlob, "audio.wav");
+
+        const response = await fetch("/speech-to-text", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            document.getElementById("text-box").value += data.text + " \n";
+        } else {
+            alert("Error: " + data.error);
         }
+    };
 
-        function startRecording() {
-            if (mediaRecorder && mediaRecorder.state === "recording") return;
-
-            audioChunks = [];
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-
-            mediaRecorder.ondataavailable = (event) => {
-                audioChunks.push(event.data);
-            };
-
-            mediaRecorder.onstop = async () => {
-                const button = document.getElementById("recordButton");
-                button.disabled = false; 
-
-                const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                const formData = new FormData();
-                formData.append("file", audioBlob, "audio.wav");
-
-                const response = await fetch("/speech-to-text", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    document.getElementById("text-box").value += data.text + " \n";
-                } else {
-                    alert("Error: " + data.error);
-                }
-            };
-
-            setTimeout(() => {
-                if (mediaRecorder.state === "recording") {
-                    mediaRecorder.stop();
-                }
-            }, 5000);
+    setTimeout(() => {
+        if (mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
         }
+    }, 5000);
+}
 
-        function stopApp() {
-            if (isRecording) {
-                mediaRecorder?.stop();
-                isRecording = false;
-            }
+function stopApp() {
+    if (mediaRecorder?.state === "recording") {
+        mediaRecorder.stop();
+    }
 
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+    }
 
-            if (audioContext) {
-                audioContext.close();
-            }
+    if (audioContext) {
+        audioContext.close();
+    }
 
-            const button = document.getElementById("recordButton");
-            button.textContent = "Start Listening";
-            button.classList.remove("recording");
-            button.disabled = false;
+    const button = document.getElementById("recordButton");
+    button.textContent = "Start Listening";
+    button.classList.remove("recording");
+    button.disabled = false;
 
-            alert("Recording stopped.");
-        }
+    alert("Recording stopped.");
+}
+
     </script>
 
 </body>
