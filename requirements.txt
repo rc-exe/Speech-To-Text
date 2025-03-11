@@ -1,8 +1,7 @@
 torch
+openai-whisper
 gunicorn
-Flask
 speechrecognition
 pydub
 ffmpeg
 whisper
-gunicorn
