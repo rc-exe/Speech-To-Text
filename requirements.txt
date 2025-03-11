@@ -3,3 +3,4 @@ Flask
 speechrecognition
 pydub
 ffmpeg
+whisper

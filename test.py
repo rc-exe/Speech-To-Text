@@ -1,2 +1,3 @@
-from pydub.utils import which
-print(which("ffmpeg"))
+import whisper
+model = whisper.load_model("tiny")
+print("Whisper model loaded successfully!")
