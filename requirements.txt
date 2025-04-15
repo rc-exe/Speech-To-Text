@@ -1,12 +1,6 @@
-torch
-openai-whisper
 gunicorn
+Flask
 speechrecognition
 pydub
 ffmpeg
-<<<<<<< Updated upstream
 whisper
-flask
-=======
-whisper
->>>>>>> Stashed changes
