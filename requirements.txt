@@ -4,5 +4,9 @@ gunicorn
 speechrecognition
 pydub
 ffmpeg
+<<<<<<< Updated upstream
 whisper
 flask
+=======
+whisper
+>>>>>>> Stashed changes
