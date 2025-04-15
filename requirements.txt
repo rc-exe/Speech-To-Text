@@ -4,3 +4,4 @@ speechrecognition
 pydub
 ffmpeg
 whisper
+torch
