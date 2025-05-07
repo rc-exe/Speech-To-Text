@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Install portaudio for PyAudio
+# Install portaudio development libraries required for PyAudio
 apt-get update && apt-get install -y portaudio19-dev
 
-# Continue with the normal build
+# Install Python dependencies
 pip install -r requirements.txt
